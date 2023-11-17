@@ -42,8 +42,9 @@
 #define _DEF_OUTPUT_PULLUP    4
 #define _DEF_OUTPUT_PULLDOWN  5
 
-#define _DEF_I2C1	0 // DAC :MSP4725
-#define _DEF_I2C2	1 // INA219
+#define _DEF_I2C1	0 // MPU6050
+#define _DEF_I2C2	1 // BME280
+#define _DEF_I2C3	2 // INA219
 
 #define _DEF_SPI1	0 // MAX31865
 

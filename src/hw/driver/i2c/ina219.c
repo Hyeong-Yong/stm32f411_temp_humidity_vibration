@@ -18,7 +18,7 @@ static void cli_ina219(cli_args_t *args);
 #endif
 
 
-static const uint8_t i2c_ch = _DEF_I2C2; //channel 0: _DEF_I2C2;
+static const uint8_t i2c_ch = _DEF_I2C3; //channel 0: _DEF_I2C3;
 
 extern I2C_HandleTypeDef hi2c3;
 

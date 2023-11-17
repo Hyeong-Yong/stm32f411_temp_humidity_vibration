@@ -19,9 +19,10 @@ void hwInit(void)
   gpioInit();
 
   i2cInit();
-  mcp4725_init();
+  mpu6050_init();
+//  mcp4725_init();
   INA219_Init();
 
   spiInit();
-  max31865_init();
+//  max31865_init();
 }

@@ -26,7 +26,7 @@ static uint32_t i2c_freq[I2C_MAX_CH];
 static bool is_init = false;
 static bool is_open[I2C_MAX_CH];
 
-
+I2C_HandleTypeDef hi2c1;
 I2C_HandleTypeDef hi2c2;
 I2C_HandleTypeDef hi2c3;
 
@@ -44,7 +44,8 @@ typedef struct
 
 static i2c_tbl_t i2c_tbl[I2C_MAX_CH] =
     {
-        { &hi2c2, GPIOB, GPIO_PIN_10,  GPIOB, GPIO_PIN_3}, //DAC (mcp4725)
+    	{ &hi2c1, GPIOB, GPIO_PIN_6, GPIOB, GPIO_PIN_7}, // MPU6050
+        { &hi2c2, GPIOB, GPIO_PIN_10,  GPIOB, GPIO_PIN_3}, // BME280
 		{ &hi2c3, GPIOA, GPIO_PIN_8, GPIOB, GPIO_PIN_4} // ina219
     };
 
@@ -95,7 +96,7 @@ bool i2cOpen(uint8_t ch, uint32_t freq_khz)
     case _DEF_I2C1:
       i2c_freq[ch] = freq_khz;
 
-      p_handle->Instance             = I2C2;
+      p_handle->Instance             = I2C1;
       p_handle->Init.ClockSpeed      = freq_khz*1000;
       p_handle->Init.DutyCycle       = I2C_DUTYCYCLE_2;
       p_handle->Init.OwnAddress1     = 0x00;
@@ -124,9 +125,9 @@ bool i2cOpen(uint8_t ch, uint32_t freq_khz)
       break;
 
 	#ifdef _USE_HW_INA219
-    case _DEF_I2C2:
+    case _DEF_I2C3:
         	p_handle->Instance = I2C3;
-        	p_handle->Init.ClockSpeed = 400000;
+        	p_handle->Init.ClockSpeed = freq_khz*1000;
         	p_handle->Init.DutyCycle = I2C_DUTYCYCLE_2;
         	p_handle->Init.OwnAddress1 = 0;
         	p_handle->Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
@@ -392,44 +393,63 @@ void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c)
 void HAL_I2C_MspInit(I2C_HandleTypeDef* i2cHandle)
 {
 
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
-  if(i2cHandle->Instance==I2C2)
-  {
-  /* USER CODE BEGIN I2C2_MspInit 0 */
 
-  /* USER CODE END I2C2_MspInit 0 */
+	  GPIO_InitTypeDef GPIO_InitStruct = {0};
+	  if(i2cHandle->Instance==I2C1)
+	  {
+	  /* USER CODE BEGIN I2C1_MspInit 0 */
 
-    __HAL_RCC_GPIOB_CLK_ENABLE();
-    /**I2C2 GPIO Configuration
-    PB10     ------> I2C2_SCL
-    PB3     ------> I2C2_SDA
-    */
-    GPIO_InitStruct.Pin = GPIO_PIN_10;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
-    GPIO_InitStruct.Pull = GPIO_PULLUP;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-    GPIO_InitStruct.Alternate = GPIO_AF4_I2C2;
-    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+	  /* USER CODE END I2C1_MspInit 0 */
 
-    GPIO_InitStruct.Pin = GPIO_PIN_3;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
-    GPIO_InitStruct.Pull = GPIO_PULLUP;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-    GPIO_InitStruct.Alternate = GPIO_AF9_I2C2;
-    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+	    __HAL_RCC_GPIOB_CLK_ENABLE();
+	    /**I2C1 GPIO Configuration
+	    PB6     ------> I2C1_SCL
+	    PB7     ------> I2C1_SDA
+	    */
+	    GPIO_InitStruct.Pin = GPIO_PIN_6|GPIO_PIN_7;
+	    GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
+	    GPIO_InitStruct.Pull = GPIO_NOPULL;
+	    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+	    GPIO_InitStruct.Alternate = GPIO_AF4_I2C1;
+	    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-    /* I2C2 clock enable */
-    __HAL_RCC_I2C2_CLK_ENABLE();
+	    /* I2C1 clock enable */
+	    __HAL_RCC_I2C1_CLK_ENABLE();
+	  /* USER CODE BEGIN I2C1_MspInit 1 */
 
-    /* I2C2 interrupt Init */
-//    HAL_NVIC_SetPriority(I2C2_EV_IRQn, 5, 0);
-//    HAL_NVIC_EnableIRQ(I2C2_EV_IRQn);
-    HAL_NVIC_SetPriority(I2C2_ER_IRQn, 5, 0);
-    HAL_NVIC_EnableIRQ(I2C2_ER_IRQn);
-  /* USER CODE BEGIN I2C2_MspInit 1 */
+	  /* USER CODE END I2C1_MspInit 1 */
+	  }
+	  else if(i2cHandle->Instance==I2C2)
+	  {
+	  /* USER CODE BEGIN I2C2_MspInit 0 */
 
-  /* USER CODE END I2C2_MspInit 1 */
-  }
+	  /* USER CODE END I2C2_MspInit 0 */
+
+	    __HAL_RCC_GPIOB_CLK_ENABLE();
+	    /**I2C2 GPIO Configuration
+	    PB10     ------> I2C2_SCL
+	    PB3     ------> I2C2_SDA
+	    */
+	    GPIO_InitStruct.Pin = GPIO_PIN_10;
+	    GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
+	    GPIO_InitStruct.Pull = GPIO_NOPULL;
+	    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+	    GPIO_InitStruct.Alternate = GPIO_AF4_I2C2;
+	    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+	    GPIO_InitStruct.Pin = GPIO_PIN_3;
+	    GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
+	    GPIO_InitStruct.Pull = GPIO_NOPULL;
+	    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+	    GPIO_InitStruct.Alternate = GPIO_AF9_I2C2;
+	    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+	    /* I2C2 clock enable */
+	    __HAL_RCC_I2C2_CLK_ENABLE();
+	  /* USER CODE BEGIN I2C2_MspInit 1 */
+
+	  /* USER CODE END I2C2_MspInit 1 */
+	  }
 #ifdef _USE_HW_INA219
   else if(i2cHandle->Instance==I2C3)
   {
@@ -469,29 +489,46 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef* i2cHandle)
 void HAL_I2C_MspDeInit(I2C_HandleTypeDef* i2cHandle)
 {
 
-  if(i2cHandle->Instance==I2C2)
-  {
-  /* USER CODE BEGIN I2C2_MspDeInit 0 */
+	  if(i2cHandle->Instance==I2C1)
+	  {
+	  /* USER CODE BEGIN I2C1_MspDeInit 0 */
 
-  /* USER CODE END I2C2_MspDeInit 0 */
-    /* Peripheral clock disable */
-    __HAL_RCC_I2C2_CLK_DISABLE();
+	  /* USER CODE END I2C1_MspDeInit 0 */
+	    /* Peripheral clock disable */
+	    __HAL_RCC_I2C1_CLK_DISABLE();
 
-    /**I2C2 GPIO Configuration
-    PB10     ------> I2C2_SCL
-    PB3     ------> I2C2_SDA
-    */
-    HAL_GPIO_DeInit(GPIOB, GPIO_PIN_10);
+	    /**I2C1 GPIO Configuration
+	    PB6     ------> I2C1_SCL
+	    PB7     ------> I2C1_SDA
+	    */
+	    HAL_GPIO_DeInit(GPIOB, GPIO_PIN_6);
 
-    HAL_GPIO_DeInit(GPIOB, GPIO_PIN_3);
+	    HAL_GPIO_DeInit(GPIOB, GPIO_PIN_7);
 
-    /* I2C2 interrupt Deinit */
-//    HAL_NVIC_DisableIRQ(I2C2_EV_IRQn);
-    HAL_NVIC_DisableIRQ(I2C2_ER_IRQn);
-  /* USER CODE BEGIN I2C2_MspDeInit 1 */
+	  /* USER CODE BEGIN I2C1_MspDeInit 1 */
 
-  /* USER CODE END I2C2_MspDeInit 1 */
-  }
+	  /* USER CODE END I2C1_MspDeInit 1 */
+	  }
+	  else if(i2cHandle->Instance==I2C2)
+	  {
+	  /* USER CODE BEGIN I2C2_MspDeInit 0 */
+
+	  /* USER CODE END I2C2_MspDeInit 0 */
+	    /* Peripheral clock disable */
+	    __HAL_RCC_I2C2_CLK_DISABLE();
+
+	    /**I2C2 GPIO Configuration
+	    PB10     ------> I2C2_SCL
+	    PB3     ------> I2C2_SDA
+	    */
+	    HAL_GPIO_DeInit(GPIOB, GPIO_PIN_10);
+
+	    HAL_GPIO_DeInit(GPIOB, GPIO_PIN_3);
+
+	  /* USER CODE BEGIN I2C2_MspDeInit 1 */
+
+	  /* USER CODE END I2C2_MspDeInit 1 */
+	  }
 #ifdef _USE_HW_INA219
   else if(i2cHandle->Instance==I2C3)
   	  {
