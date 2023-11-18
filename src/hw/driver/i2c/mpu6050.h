@@ -13,7 +13,8 @@
 
 #ifdef _USE_HW_MPU6050
 
-#define MPU6050_ADDR 0xD0
+#define MPU6050_ADDR 0x68
+//#define MPU6050_ADDR 0xD0
 
 #define SMPLRT_DIV_REG 0x19
 #define GYRO_CONFIG_REG 0x1B
@@ -24,8 +25,21 @@
 #define PWR_MGMT_1_REG 0x6B
 #define WHO_AM_I_REG 0x75
 
+typedef struct Acceleration
+{
+	  float Ax, Ay, Az;
+} Acceleration;
+
+typedef struct AngularVelocity
+{
+	  float Gx, Gy, Gz;
+} AngularVelocity;
+
 
 bool mpu6050_init(void);
+bool mpu6050_configuration();
+void mpu6050_read_accel(void);
+void mpu6050_read_gyro(void);
 
 #endif
 
