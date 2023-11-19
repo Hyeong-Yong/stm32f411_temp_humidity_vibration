@@ -8,51 +8,37 @@
 
 #include "bme280.h"
 #include "cli.h"
+#include "i2c.h"
 
+#ifdef _USE_HW_BME280
 
-#define BME280_ADDRESS 0x76  // SDIO is grounded, the 7 bit address is 0x76 and 8 bit address = 0x76<<1 = 0xEC
+#ifdef _USE_HW_CLI
+static void cliBme280(cli_args_t *args);
+#endif
 
-//#define SUPPORT_64BIT 1
-#define SUPPORT_32BIT 1
-
-/*
-1. [Humidity] osrs_h[2:0] (ctrl_hum Register)
-
-The resolution of the humidity measurement is fixed at 16 bit ADC output.
-
-2. [Pressure] osrs_p[2:0] (ctrl_meas Register)
-
-The resolution of the pressure data depends on the IIR filter and the oversampling setting:
-• When the IIR filter is enabled, the pressure resolution is 20 bit.
-• When the IIR filter is disabled, the pressure resolution is 16 + (osrs_p – 1) bit, e.g. 18 bit when osrs_p is set to ‘3’.
-
-3. [Temperature] osrs_t[2:0]
-
-4. [Configuration]
-
-The “config” register sets the rate, filter and interface options of the device.
-Writes to the “config” register in normal mode may be ignored but In sleep mode writes are not ignored.
-*/
-
-
+static const uint8_t i2c_ch = _DEF_I2C2;
 
 uint8_t chipID;
-
 uint8_t TrimParam[36];
 int32_t tRaw, pRaw, hRaw;
-
 uint16_t dig_T1, \
          dig_P1, \
          dig_H1, dig_H3;
-
 int16_t  dig_T2, dig_T3, \
          dig_P2, dig_P3, dig_P4, dig_P5, dig_P6, dig_P7, dig_P8, dig_P9, \
 		 dig_H2, dig_H4, dig_H5, dig_H6;
+float Temperature, Pressure, Humidity;
 
-extern float Temperature, Pressure, Humidity;
 
-bool bme280Init(){
-	ret = false;
+bool bme280_init(){
+	bool ret = false;
+
+#ifdef _USE_HW_CLI
+	cliAdd("bme280", cliBme280);
+#endif
+
+	bme280_config(OSRS_2, OSRS_16, OSRS_1, MODE_NORMAL, T_SB_0p5, IIR_16);
+
 	return ret;
 }
 
@@ -62,10 +48,12 @@ void trimRead(void)
 {
 	uint8_t trimdata[32];
 	// Read NVM from 0x88 to 0xA1
-	HAL_I2C_Mem_Read(BME280_I2C, BME280_ADDRESS, 0x88, 1, trimdata, 25, HAL_MAX_DELAY);
+	i2cReadBytes(i2c_ch, BME280_ADDRESS, 0x88, trimdata, 25, 1000);
+	//HAL_I2C_Mem_Read(BME280_I2C, BME280_ADDRESS, 0x88, 1, trimdata, 25, HAL_MAX_DELAY);
 
 	// Read NVM from 0xE1 to 0xE7
-	HAL_I2C_Mem_Read(BME280_I2C, BME280_ADDRESS, 0xE1, 1, (uint8_t *)trimdata+25, 7, HAL_MAX_DELAY);
+	i2cReadBytes(i2c_ch, BME280_ADDRESS, 0x88, (uint8_t *)trimdata+25, 7, 1000);
+	//HAL_I2C_Mem_Read(BME280_I2C, BME280_ADDRESS, 0xE1, 1, (uint8_t *)trimdata+25, 7, HAL_MAX_DELAY);
 
 	// Arrange the data as per the datasheet (page no. 24)
 	dig_T1 = (trimdata[1]<<8) | trimdata[0];
@@ -80,7 +68,7 @@ void trimRead(void)
 	dig_P7 = (trimdata[19]<<8) | trimdata[18];
 	dig_P8 = (trimdata[21]<<8) | trimdata[20];
 	dig_P9 = (trimdata[23]<<8) | trimdata[22];
-	dig_H1 = trimdata[24];
+	dig_H1 = (trimdata[24]);
 	dig_H2 = (trimdata[26]<<8) | trimdata[25];
 	dig_H3 = (trimdata[27]);
 	dig_H4 = (trimdata[28]<<4) | (trimdata[29] & 0x0f);
@@ -106,19 +94,17 @@ void trimRead(void)
  *         IIR is used to avoid the short term fluctuations
  *         Check datasheet page no 18 and page no 30
  */
-
-int bme280_config (uint8_t osrs_t, uint8_t osrs_p, uint8_t osrs_h, uint8_t mode, uint8_t t_sb, uint8_t filter)
+int bme280_config(uint8_t osrs_t, uint8_t osrs_p, uint8_t osrs_h, uint8_t mode, uint8_t t_sb, uint8_t filter)
 {
 	// Read the Trimming parameters
-	TrimRead();
-
+	trimRead();
 
 	uint8_t datatowrite = 0;
 	uint8_t datacheck = 0;
 
 	// Reset the device
 	datatowrite = 0xB6;  // reset sequence
-	if (HAL_I2C_Mem_Write(BME280_I2C, BME280_ADDRESS, RESET_REG, 1, &datatowrite, 1, 1000) != HAL_OK)
+	if (i2cWriteByte(i2c_ch, BME280_ADDRESS, RESET_REG, datatowrite, 1000) != true)
 	{
 		return -1;
 	}
@@ -128,12 +114,15 @@ int bme280_config (uint8_t osrs_t, uint8_t osrs_p, uint8_t osrs_h, uint8_t mode,
 
 	// write the humidity oversampling to 0xF2
 	datatowrite = osrs_h;
-	if (HAL_I2C_Mem_Write(BME280_I2C, BME280_ADDRESS, CTRL_HUM_REG, 1, &datatowrite, 1, 1000) != HAL_OK)
+	if (i2cWriteByte(i2c_ch, BME280_ADDRESS, CTRL_HUM_REG, datatowrite, 1000) != true)
 	{
 		return -1;
 	}
+
+
 	HAL_Delay (100);
-	HAL_I2C_Mem_Read(BME280_I2C, BME280_ADDRESS, CTRL_HUM_REG, 1, &datacheck, 1, 1000);
+
+	i2cReadByte(i2c_ch, BME280_ADDRESS, CTRL_HUM_REG, &datacheck, 1000);
 	if (datacheck != datatowrite)
 	{
 		return -1;
@@ -142,12 +131,12 @@ int bme280_config (uint8_t osrs_t, uint8_t osrs_p, uint8_t osrs_h, uint8_t mode,
 
 	// write the standby time and IIR filter coeff to 0xF5
 	datatowrite = (t_sb <<5) |(filter << 2);
-	if (HAL_I2C_Mem_Write(BME280_I2C, BME280_ADDRESS, CONFIG_REG, 1, &datatowrite, 1, 1000) != HAL_OK)
+	if (i2cWriteByte(i2c_ch, BME280_ADDRESS, CONFIG_REG, datatowrite, 1000)!= true)
 	{
 		return -1;
 	}
 	HAL_Delay (100);
-	HAL_I2C_Mem_Read(BME280_I2C, BME280_ADDRESS, CONFIG_REG, 1, &datacheck, 1, 1000);
+	i2cReadByte(i2c_ch, BME280_ADDRESS, CONFIG_REG, &datacheck, 1000);
 	if (datacheck != datatowrite)
 	{
 		return -1;
@@ -156,12 +145,12 @@ int bme280_config (uint8_t osrs_t, uint8_t osrs_p, uint8_t osrs_h, uint8_t mode,
 
 	// write the pressure and temp oversampling along with mode to 0xF4
 	datatowrite = (osrs_t <<5) |(osrs_p << 2) | mode;
-	if (HAL_I2C_Mem_Write(BME280_I2C, BME280_ADDRESS, CTRL_MEAS_REG, 1, &datatowrite, 1, 1000) != HAL_OK)
+	if (i2cWriteByte(i2c_ch, BME280_ADDRESS, CTRL_MEAS_REG, datatowrite, 1000)!= true)
 	{
 		return -1;
 	}
 	HAL_Delay (100);
-	HAL_I2C_Mem_Read(BME280_I2C, BME280_ADDRESS, CTRL_MEAS_REG, 1, &datacheck, 1, 1000);
+	i2cReadByte(i2c_ch, BME280_ADDRESS, CTRL_MEAS_REG, &datacheck, 1000);
 	if (datacheck != datatowrite)
 	{
 		return -1;
@@ -176,12 +165,12 @@ int bmeReadRaw(void)
 	uint8_t RawData[8];
 
 	// Check the chip ID before reading
-	HAL_I2C_Mem_Read(&hi2c1, BME280_ADDRESS, ID_REG, 1, &chipID, 1, 1000);
-
+	i2cReadByte(i2c_ch, BME280_ADDRESS, ID_REG, &chipID, 1000);
 	if (chipID == 0x60)
 	{
 		// Read the Registers 0xF7 to 0xFE
-		HAL_I2C_Mem_Read(BME280_I2C, BME280_ADDRESS, PRESS_MSB_REG, 1, RawData, 8, HAL_MAX_DELAY);
+		i2cReadByte(i2c_ch, BME280_ADDRESS, PRESS_MSB_REG, &RawData[0], 1000);
+		//HAL_I2C_Mem_Read(BME280_I2C, BME280_ADDRESS, PRESS_MSB_REG, 1, RawData, 8, HAL_MAX_DELAY);
 
 		/* Calculate the Raw data for the parameters
 		 * Here the Pressure and Temperature are in 20 bit format and humidity in 16 bit format
@@ -204,13 +193,15 @@ void bme280_wakeUp(void)
 	uint8_t datatowrite = 0;
 
 	// first read the register
-	HAL_I2C_Mem_Read(BME280_I2C, BME280_ADDRESS, CTRL_MEAS_REG, 1, &datatowrite, 1, 1000);
+	i2cReadByte(i2c_ch, BME280_ADDRESS, CTRL_MEAS_REG, &datatowrite, 1000);
+	//HAL_I2C_Mem_Read(BME280_I2C, BME280_ADDRESS, CTRL_MEAS_REG, 1, &datatowrite, 1, 1000);
 
 	// modify the data with the forced mode
 	datatowrite = datatowrite | MODE_FORCED;
 
 	// write the new data to the register
-	HAL_I2C_Mem_Write(BME280_I2C, BME280_ADDRESS, CTRL_MEAS_REG, 1, &datatowrite, 1, 1000);
+	i2cReadByte(i2c_ch, BME280_ADDRESS, CTRL_MEAS_REG, &datatowrite, 1000);
+	//HAL_I2C_Mem_Write(BME280_I2C, BME280_ADDRESS, CTRL_MEAS_REG, 1, &datatowrite, 1, 1000);
 
 	HAL_Delay (100);
 }
@@ -315,22 +306,22 @@ uint32_t bme280_compensate_H_int32(int32_t adc_H)
  */
 void bme280_measure(void)
 {
-	if (BMEReadRaw() == 0)
+	if (bmeReadRaw() == 0)
 	{
 		  if (tRaw == 0x800000) Temperature = 0; // value in case temp measurement was disabled
 		  else
 		  {
-			  Temperature = (BME280_compensate_T_int32 (tRaw))/100.0;  // as per datasheet, the temp is x100
+			  Temperature = (bme280_compensate_T_int32 (tRaw))/100.0;  // as per datasheet, the temp is x100
 		  }
 
 		  if (pRaw == 0x800000) Pressure = 0; // value in case temp measurement was disabled
 		  else
 		  {
 #if SUPPORT_64BIT
-			  Pressure = (BME280_compensate_P_int64 (pRaw))/256.0;  // as per datasheet, the pressure is x256
+			  Pressure = (bme280_compensate_P_int64 (pRaw))/256.0;  // as per datasheet, the pressure is x256
 
 #elif SUPPORT_32BIT
-			  Pressure = (BME280_compensate_P_int32 (pRaw));  // as per datasheet, the pressure is Pa
+			  Pressure = (bme280_compensate_P_int32 (pRaw));  // as per datasheet, the pressure is Pa
 
 #endif
 		  }
@@ -350,3 +341,49 @@ void bme280_measure(void)
 	}
 }
 
+
+
+#ifdef _USE_HW_CLI
+void cliBme280(cli_args_t *args){
+	  bool ret = true;
+	  uint8_t i;
+	  if(args->argc==1){
+		    if(args->isStr(0, "scan") == true)
+		    {
+		    	bool ret = false;
+		      for (i=0x00; i<= 0x7F; i++)
+		      {
+		        if (i2cIsDeviceReady(i2c_ch, i) == true)
+		        {
+		          cliPrintf("I2C Addr 0x%X : OK\n", i);
+		          ret= true;
+		        }
+		      }
+		      if (ret== false){
+		    	  cliPrintf("I2C device is not found\n");
+		      }
+		    }
+		    else if(args->isStr(0, "measure") == true){
+			  while(cliKeepLoop()){
+				  bme280_measure();
+				  delay(500);
+				  cliPrintf("Temperature: %f, Humidity: %f, Pressure: %f\n", Temperature, Humidity, Pressure);
+			  }
+		  }
+
+
+
+	  }
+	  else{
+		  ret= false;
+	  }
+
+	  if (ret == false){
+		  cliPrintf("bme280 config\n");
+		  cliPrintf("bme280 measure\n");
+	  }
+}
+
+#endif
+
+#endif

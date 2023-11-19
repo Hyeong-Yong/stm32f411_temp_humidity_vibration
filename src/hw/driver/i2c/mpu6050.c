@@ -14,17 +14,15 @@
 
 typedef struct MPU6050
 {
-  I2C_HandleTypeDef *hi2c;
   bool isConnected;
   Acceleration acceleration;
   AngularVelocity angularVelocity;
 } MPU6050;
 
 
-extern I2C_HandleTypeDef hi2c1;
 MPU6050 mpu6050;
 
-const uint8_t i2c_ch = _DEF_I2C1;
+static const uint8_t i2c_ch = _DEF_I2C1;
 
 
 #ifdef _USE_HW_CLI
@@ -36,7 +34,6 @@ static void cliMPU6050(cli_args_t *args);
 bool mpu6050_init(void){
 	bool ret = false;
 
-	mpu6050.hi2c = &hi2c1;
 	//uint8_t mpu6050_isReady =0;
 	//bool isConnected = false;
 	//isConnected = i2cReadByte(i2c_ch, MPU6050_ADDR, WHO_AM_I_REG, &mpu6050_isReady, 1000);
@@ -124,7 +121,6 @@ void mpu6050_read_gyro(void)
 void cliMPU6050(cli_args_t *args){
 	  bool ret = true;
 	  bool i2c_ret;
-	  bool mpu6050_ret = false;
 	  uint8_t i;
 	  uint32_t pre_time;
 

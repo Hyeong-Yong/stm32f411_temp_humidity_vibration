@@ -10,6 +10,12 @@
 
 #include "hw.h"
 
+#define BME280_ADDRESS 0x76  // SDIO is grounded, the 7 bit address is 0x76 and 8 bit address = 0x76<<1 = 0xEC
+
+//#define SUPPORT_64BIT 1
+#define SUPPORT_32BIT 1
+
+
 // Oversampling definitions
 #define OSRS_OFF    	0x00
 #define OSRS_1      	0x01
@@ -70,7 +76,7 @@
 
 
 
-bool bme280Init();
+bool bme280_init();
 int bme280_config(uint8_t osrs_t, uint8_t osrs_p, uint8_t osrs_h, uint8_t mode, uint8_t t_sb, uint8_t filter);
 void trimRead(void);
 void mbe280_wakeUp(void);

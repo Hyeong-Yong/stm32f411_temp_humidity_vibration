@@ -124,6 +124,35 @@ bool i2cOpen(uint8_t ch, uint32_t freq_khz)
       is_open[ch] = ret;
       break;
 
+
+    case _DEF_I2C2:
+
+    	p_handle->Instance = I2C2;
+    	p_handle->Init.ClockSpeed = freq_khz*1000;
+    	p_handle->Init.DutyCycle = I2C_DUTYCYCLE_2;
+    	p_handle->Init.OwnAddress1 = 0;
+    	p_handle->Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+    	p_handle->Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+    	p_handle->Init.OwnAddress2 = 0;
+    	p_handle->Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+    	p_handle->Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+        i2cReset(ch);
+
+
+        HAL_I2C_DeInit(p_handle);
+        if(HAL_I2C_Init(p_handle) == HAL_OK)
+        {
+      	  ret = true;
+        }
+
+        /* Enable the Analog I2C Filter */
+        //HAL_I2CEx_ConfigAnalogFilter(p_handle,I2C_ANALOGFILTER_ENABLE);
+
+        /* Configure Digital filter */
+        //HAL_I2CEx_ConfigDigitalFilter(p_handle, 0);
+
+        is_open[ch] = ret;
+    	break;
 	#ifdef _USE_HW_INA219
     case _DEF_I2C3:
         	p_handle->Instance = I2C3;

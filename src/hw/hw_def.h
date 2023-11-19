@@ -40,6 +40,7 @@
 #define _USE_HW_I2C
 #define      HW_I2C_MAX_CH	3
 #define _USE_HW_MPU6050
+#define _USE_HW_BME280
 #define _USE_HW_INA219
 
 
