@@ -37,14 +37,14 @@ bool mpu6050_init(void){
 	bool ret = false;
 
 	mpu6050.hi2c = &hi2c1;
-	uint8_t mpu6050_isReady =0;
-	bool isConnected = false;
+	//uint8_t mpu6050_isReady =0;
+	//bool isConnected = false;
 	//isConnected = i2cReadByte(i2c_ch, MPU6050_ADDR, WHO_AM_I_REG, &mpu6050_isReady, 1000);
 	//if (mpu6050_isReady == 0x68){
 	//	ret = true;
 	//	mpu6050.isConnected = true;
 	//} TODO: WHO_AM_I_REG 작동이 이상함 나중에 점검 필요
-	mpu6050_configuration
+	mpu6050_configuration();
 #ifdef _USE_HW_CLI
 cliAdd("mpu6050", cliMPU6050);
 #endif
@@ -183,12 +183,16 @@ void cliMPU6050(cli_args_t *args){
 	    if(args->isStr(0, "get_angular") == true)
 	        {
 	    	while(cliKeepLoop()){
+	    	      if (millis()-pre_time >= 100)
+	    	      {
+	    	        pre_time = millis();
 	    		mpu6050_read_gyro();
 	    		float Gx, Gy, Gz;
 	    		Gx = mpu6050.angularVelocity.Gx;
 	    		Gy = mpu6050.angularVelocity.Gy;
 	    		Gz = mpu6050.angularVelocity.Gz;
 	    		cliPrintf("[Angular Velocity] x: %f, y: %f, z: %f\n", Gx, Gy, Gz);
+	    		}
 	    	}
 	    	}
 
@@ -208,6 +212,7 @@ void cliMPU6050(cli_args_t *args){
 	    cliPrintf( "mcp4725 get_angular \n");
 
 	  }
+
 	}
 
 #endif
