@@ -28,7 +28,7 @@ static const uint8_t i2c_ch = _DEF_I2C1;
 #ifdef _USE_HW_CLI
 static void cliMPU6050(cli_args_t *args);
 #endif
-
+Acceleration tempAcceleration;
 
 
 bool mpu6050_init(void){
@@ -163,15 +163,25 @@ void cliMPU6050(cli_args_t *args){
 	        {
 	    	while(cliKeepLoop()){
 
-	    	      if (millis()-pre_time >= 100)
+	    	      if (millis()-pre_time >= 1000)
 	    	      {
 	    	        pre_time = millis();
+
+		    		float temp_Ax = mpu6050.acceleration.Ax;
+					float temp_Ay = mpu6050.acceleration.Ay;
+					float temp_Az = mpu6050.acceleration.Az;
 		    		mpu6050_read_accel();
-		    		float Ax, Ay, Az;
-		    		Ax = mpu6050.acceleration.Ax;
-		    		Ay = mpu6050.acceleration.Ay;
-		    		Az = mpu6050.acceleration.Az;
+
+					float Ax = mpu6050.acceleration.Ax;
+		    		float Ay = mpu6050.acceleration.Ay;
+		    		float Az = mpu6050.acceleration.Az;
+
+		    		float diff_Ax = Ax-temp_Ax;
+		    		float diff_Ay = Ay-temp_Ay;
+		    		float diff_Az = Az-temp_Az;
+
 		    		cliPrintf("[Acceleration] x: %f, y: %f, z: %f\n", Ax, Ay, Az);
+		    		cliPrintf("[Difference] delta_x: %f, delta_y: %f, delta_z: %f\n\n", diff_Ax, diff_Ay, diff_Az);
 	    	      }
 
 	    	}

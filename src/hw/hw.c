@@ -20,6 +20,7 @@ void hwInit(void)
 
   i2cInit();
   mpu6050_init();
+
   bme280_init();
 
   spiInit();

@@ -27,8 +27,15 @@ uint16_t dig_T1, \
 int16_t  dig_T2, dig_T3, \
          dig_P2, dig_P3, dig_P4, dig_P5, dig_P6, dig_P7, dig_P8, dig_P9, \
 		 dig_H2, dig_H4, dig_H5, dig_H6;
-float Temperature, Pressure, Humidity;
 
+//typedef struct {
+//
+//} TempPressHum;
+//
+//TempPressHum tempPressHum1;
+
+float Temperature, Pressure, Humidity;
+float DiffTemperature, DiffPressure, DiffHumidity;
 
 bool bme280_init(){
 	bool ret = false;
@@ -37,7 +44,6 @@ bool bme280_init(){
 	cliAdd("bme280", cliBme280);
 #endif
 
-	//bme280_config(OSRS_2, OSRS_16, OSRS_1, MODE_NORMAL, T_SB_0p5, IIR_16);
 
 	return ret;
 }
@@ -52,7 +58,7 @@ void trimRead(void)
 	//HAL_I2C_Mem_Read(BME280_I2C, BME280_ADDRESS, 0x88, 1, trimdata, 25, HAL_MAX_DELAY);
 
 	// Read NVM from 0xE1 to 0xE7
-	i2cReadBytes(i2c_ch, BME280_ADDRESS, 0x88, (uint8_t *)trimdata+25, 7, 1000);
+	i2cReadBytes(i2c_ch, BME280_ADDRESS, 0xE1, (uint8_t *)trimdata+25, 7, 1000);
 	//HAL_I2C_Mem_Read(BME280_I2C, BME280_ADDRESS, 0xE1, 1, (uint8_t *)trimdata+25, 7, HAL_MAX_DELAY);
 
 	// Arrange the data as per the datasheet (page no. 24)
@@ -104,7 +110,7 @@ int bme280_config(uint8_t osrs_t, uint8_t osrs_p, uint8_t osrs_h, uint8_t mode, 
 
 	// Reset the device
 	datatowrite = 0xB6;  // reset sequence
-	if (i2cWriteByte(i2c_ch, BME280_ADDRESS, RESET_REG, datatowrite, 1000) != true)
+	if (i2cWriteByte(i2c_ch, BME280_ADDRESS, RESET_REG, datatowrite, 5000) != true)
 	{
 		return -1;
 	}
@@ -169,7 +175,7 @@ int bmeReadRaw(void)
 	if (chipID == 0x60)
 	{
 		// Read the Registers 0xF7 to 0xFE
-		i2cReadByte(i2c_ch, BME280_ADDRESS, PRESS_MSB_REG, &RawData[0], 1000);
+		i2cReadBytes(i2c_ch, BME280_ADDRESS, PRESS_MSB_REG, RawData,8, 5000);
 		//HAL_I2C_Mem_Read(BME280_I2C, BME280_ADDRESS, PRESS_MSB_REG, 1, RawData, 8, HAL_MAX_DELAY);
 
 		/* Calculate the Raw data for the parameters
@@ -306,15 +312,27 @@ uint32_t bme280_compensate_H_int32(int32_t adc_H)
  */
 void bme280_measure(void)
 {
+	float temp_Temperature, temp_Pressure, temp_Humidity;
+
+	temp_Temperature = Temperature;
+	temp_Pressure = Pressure;
+	temp_Humidity = Humidity;
+
 	if (bmeReadRaw() == 0)
 	{
-		  if (tRaw == 0x800000) Temperature = 0; // value in case temp measurement was disabled
+		  if (tRaw == 0x800000) {
+			  Temperature = 0; // value in case temp measurement was disabled
+		  }
 		  else
 		  {
 			  Temperature = (bme280_compensate_T_int32 (tRaw))/100.0;  // as per datasheet, the temp is x100
 		  }
 
-		  if (pRaw == 0x800000) Pressure = 0; // value in case temp measurement was disabled
+		  DiffTemperature = Temperature - temp_Temperature;
+
+		  if (pRaw == 0x800000) {
+			  Pressure = 0; // value in case temp measurement was disabled
+		  }
 		  else
 		  {
 #if SUPPORT_64BIT
@@ -322,15 +340,21 @@ void bme280_measure(void)
 
 #elif SUPPORT_32BIT
 			  Pressure = (bme280_compensate_P_int32 (pRaw));  // as per datasheet, the pressure is Pa
-
 #endif
 		  }
 
-		  if (hRaw == 0x8000) Humidity = 0; // value in case temp measurement was disabled
+		  DiffPressure = Pressure - temp_Pressure;
+
+		  if (hRaw == 0x8000) {
+			  Humidity = 0; // value in case temp measurement was disabled
+		  }
 		  else
 		  {
 			  Humidity = (bme280_compensate_H_int32 (hRaw))/1024.0;  // as per datasheet, the temp is x1024
 		  }
+
+		  DiffHumidity = Humidity- temp_Humidity;
+
 	}
 
 
@@ -367,8 +391,8 @@ void cliBme280(cli_args_t *args){
 		    else if(args->isStr(0, "measure") == true){
 			  while(cliKeepLoop()){
 				  bme280_measure();
-				  delay(500);
-				  cliPrintf("Temperature: %f, Humidity: %f, Pressure: %f\n", Temperature, Humidity, Pressure);
+				  delay(1000);
+				  cliPrintf("Temperature: %.2f, Humidity: %.2f\n Difference of Temperature and Humidity: %.3f and %.3f\n\n,", Temperature, Humidity, DiffTemperature, DiffHumidity);
 			  }
 		    }
 	  }

@@ -18,6 +18,7 @@ void apInit(void)
   uartOpen(_DEF_UART2, 57600);
   i2cOpen(_DEF_I2C1, 400);  // mpu6050,  IMU sensor
   i2cOpen(_DEF_I2C2, 100);	// bme280,   temperature/humidity sensor
+  bme280_config(OSRS_2, OSRS_16, OSRS_1, MODE_NORMAL, T_SB_0p5, IIR_16);
   spiOpen(_DEF_SPI1);		// max31865, temperature sensor
 }
 
