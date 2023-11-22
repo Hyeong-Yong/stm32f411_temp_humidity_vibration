@@ -38,10 +38,9 @@
 #define      HW_GPIO_MAX_CH         2
 
 #define _USE_HW_I2C
-#define      HW_I2C_MAX_CH	3
+#define      HW_I2C_MAX_CH	2
 #define _USE_HW_MPU6050
 #define _USE_HW_BME280
-#define _USE_HW_INA219
 
 
 #define _USE_HW_SPI

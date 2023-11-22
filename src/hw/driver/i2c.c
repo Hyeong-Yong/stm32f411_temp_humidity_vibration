@@ -28,7 +28,6 @@ static bool is_open[I2C_MAX_CH];
 
 I2C_HandleTypeDef hi2c1;
 I2C_HandleTypeDef hi2c2;
-I2C_HandleTypeDef hi2c3;
 
 
 typedef struct
@@ -44,9 +43,8 @@ typedef struct
 
 static i2c_tbl_t i2c_tbl[I2C_MAX_CH] =
     {
-    	{ &hi2c1, GPIOB, GPIO_PIN_6, GPIOB, GPIO_PIN_7}, // MPU6050
+    	{ &hi2c1, GPIOB, GPIO_PIN_6,   GPIOB, GPIO_PIN_7}, // MPU6050
         { &hi2c2, GPIOB, GPIO_PIN_10,  GPIOB, GPIO_PIN_3}, // BME280
-		{ &hi2c3, GPIOA, GPIO_PIN_8, GPIOB, GPIO_PIN_4} // ina219
     };
 
 
@@ -124,9 +122,7 @@ bool i2cOpen(uint8_t ch, uint32_t freq_khz)
       is_open[ch] = ret;
       break;
 
-
     case _DEF_I2C2:
-
     	p_handle->Instance = I2C2;
     	p_handle->Init.ClockSpeed = freq_khz*1000;
     	p_handle->Init.DutyCycle = I2C_DUTYCYCLE_2;
@@ -137,7 +133,6 @@ bool i2cOpen(uint8_t ch, uint32_t freq_khz)
     	p_handle->Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
     	p_handle->Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
         i2cReset(ch);
-
 
         HAL_I2C_DeInit(p_handle);
         if(HAL_I2C_Init(p_handle) == HAL_OK)
@@ -153,36 +148,6 @@ bool i2cOpen(uint8_t ch, uint32_t freq_khz)
 
         is_open[ch] = ret;
     	break;
-	#ifdef _USE_HW_INA219
-    case _DEF_I2C3:
-        	p_handle->Instance = I2C3;
-        	p_handle->Init.ClockSpeed = freq_khz*1000;
-        	p_handle->Init.DutyCycle = I2C_DUTYCYCLE_2;
-        	p_handle->Init.OwnAddress1 = 0;
-        	p_handle->Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
-        	p_handle->Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
-        	p_handle->Init.OwnAddress2 = 0;
-        	p_handle->Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
-        	p_handle->Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
-            i2cReset(ch);
-
-
-            HAL_I2C_DeInit(p_handle);
-            if(HAL_I2C_Init(p_handle) == HAL_OK)
-            {
-          	  ret = true;
-            }
-
-            /* Enable the Analog I2C Filter */
-            HAL_I2CEx_ConfigAnalogFilter(p_handle,I2C_ANALOGFILTER_ENABLE);
-
-            /* Configure Digital filter */
-            HAL_I2CEx_ConfigDigitalFilter(p_handle, 0);
-
-            is_open[ch] = ret;
-        	break;
-	#endif
-
   }
 
   return ret;
@@ -245,7 +210,6 @@ void i2cReset(uint8_t ch)
 bool i2cIsDeviceReady(uint8_t ch, uint8_t dev_addr)
 {
   I2C_HandleTypeDef *p_handle = i2c_tbl[ch].p_hi2c;
-
 
   if (HAL_I2C_IsDeviceReady(p_handle, dev_addr << 1, 10, 100) == HAL_OK)
   {
@@ -421,8 +385,6 @@ void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c)
 
 void HAL_I2C_MspInit(I2C_HandleTypeDef* i2cHandle)
 {
-
-
 	  GPIO_InitTypeDef GPIO_InitStruct = {0};
 	  if(i2cHandle->Instance==I2C1)
 	  {
@@ -479,40 +441,6 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef* i2cHandle)
 
 	  /* USER CODE END I2C2_MspInit 1 */
 	  }
-#ifdef _USE_HW_INA219
-  else if(i2cHandle->Instance==I2C3)
-  {
-  /* USER CODE BEGIN I2C3_MspInit 0 */
-
-  /* USER CODE END I2C3_MspInit 0 */
-
-    __HAL_RCC_GPIOA_CLK_ENABLE();
-    __HAL_RCC_GPIOB_CLK_ENABLE();
-    /**I2C3 GPIO Configuration
-    PA8     ------> I2C3_SCL
-    PB4     ------> I2C3_SDA
-    */
-    GPIO_InitStruct.Pin = GPIO_PIN_8;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-    GPIO_InitStruct.Alternate = GPIO_AF4_I2C3;
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-    GPIO_InitStruct.Pin = GPIO_PIN_4;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-    GPIO_InitStruct.Alternate = GPIO_AF9_I2C3;
-    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-    /* I2C3 clock enable */
-    __HAL_RCC_I2C3_CLK_ENABLE();
-  /* USER CODE BEGIN I2C3_MspInit 1 */
-
-  /* USER CODE END I2C3_MspInit 1 */
-  }
-#endif
 }
 
 void HAL_I2C_MspDeInit(I2C_HandleTypeDef* i2cHandle)
@@ -558,28 +486,6 @@ void HAL_I2C_MspDeInit(I2C_HandleTypeDef* i2cHandle)
 
 	  /* USER CODE END I2C2_MspDeInit 1 */
 	  }
-#ifdef _USE_HW_INA219
-  else if(i2cHandle->Instance==I2C3)
-  	  {
-  	  /* USER CODE BEGIN I2C3_MspDeInit 0 */
-
-  	  /* USER CODE END I2C3_MspDeInit 0 */
-  	    /* Peripheral clock disable */
-  	    __HAL_RCC_I2C3_CLK_DISABLE();
-
-  	    /**I2C3 GPIO Configuration
-  	    PA8     ------> I2C3_SCL
-  	    PB4     ------> I2C3_SDA
-  	    */
-  	    HAL_GPIO_DeInit(GPIOA, GPIO_PIN_8);
-
-  	    HAL_GPIO_DeInit(GPIOB, GPIO_PIN_4);
-
-  	  /* USER CODE BEGIN I2C3_MspDeInit 1 */
-
-  	  /* USER CODE END I2C3_MspDeInit 1 */
-  	  }
-#endif
 }
 
 

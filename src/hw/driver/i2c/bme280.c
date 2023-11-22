@@ -37,7 +37,7 @@ bool bme280_init(){
 	cliAdd("bme280", cliBme280);
 #endif
 
-	bme280_config(OSRS_2, OSRS_16, OSRS_1, MODE_NORMAL, T_SB_0p5, IIR_16);
+	//bme280_config(OSRS_2, OSRS_16, OSRS_1, MODE_NORMAL, T_SB_0p5, IIR_16);
 
 	return ret;
 }
@@ -347,19 +347,20 @@ void bme280_measure(void)
 void cliBme280(cli_args_t *args){
 	  bool ret = true;
 	  uint8_t i;
+
 	  if(args->argc==1){
-		    if(args->isStr(0, "scan") == true)
-		    {
-		    	bool ret = false;
+		    if(args->isStr(0, "scan") == true){
+		      bool device_ret = false;
 		      for (i=0x00; i<= 0x7F; i++)
 		      {
 		        if (i2cIsDeviceReady(i2c_ch, i) == true)
 		        {
 		          cliPrintf("I2C Addr 0x%X : OK\n", i);
-		          ret= true;
+		          device_ret= true;
 		        }
 		      }
-		      if (ret== false){
+
+		      if (device_ret == false){
 		    	  cliPrintf("I2C device is not found\n");
 		      }
 		    }
@@ -369,17 +370,14 @@ void cliBme280(cli_args_t *args){
 				  delay(500);
 				  cliPrintf("Temperature: %f, Humidity: %f, Pressure: %f\n", Temperature, Humidity, Pressure);
 			  }
-		  }
-
-
-
+		    }
 	  }
 	  else{
 		  ret= false;
 	  }
 
 	  if (ret == false){
-		  cliPrintf("bme280 config\n");
+		  cliPrintf("bme280 scan\n");
 		  cliPrintf("bme280 measure\n");
 	  }
 }

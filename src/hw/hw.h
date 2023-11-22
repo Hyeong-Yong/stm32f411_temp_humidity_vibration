@@ -25,7 +25,6 @@
 #include "i2c.h"
 #include "mpu6050.h"
 #include "bme280.h"
-#include "ina219.h"
 //#include "mcp4725.h"
 
 #include "spi.h"
