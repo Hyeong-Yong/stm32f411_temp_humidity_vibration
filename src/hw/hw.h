@@ -29,6 +29,7 @@
 
 #include "spi.h"
 //#include "max31865.h"
+#include "dac8562.h"
 
 void hwInit(void);
 

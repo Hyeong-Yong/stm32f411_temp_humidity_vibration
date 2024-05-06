@@ -32,8 +32,8 @@
 #define _DEF_BUTTON3          2
 #define _DEF_BUTTON4          3
 
-#define _DEF_LOW              0
-#define _DEF_HIGH             1
+#define _DEF_RESET              0
+#define _DEF_SET             1
 
 #define _DEF_INPUT            0
 #define _DEF_INPUT_PULLUP     1
@@ -47,10 +47,11 @@
 #define _DEF_I2C3	2 // INA219
 
 #define _DEF_SPI1	0 // MAX31865
+#define _DEF_SPI2	1 // DAC8562
 
 #define _DEF_GPIO1	0
 #define _DEF_GPIO2	1  //SPI_MAX31865_CS
-
+#define _DEF_GPIO3  2
 
 #define constrain(amt,low,high) ((amt)<(low)?(low):((amt)>(high)?(high):(amt)))
 

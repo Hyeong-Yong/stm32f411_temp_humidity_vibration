@@ -51,7 +51,7 @@ void max31865_init() //uint8_t  numwires, uint8_t filterHz
   pt100.lock = 1;
 
 // CS핀 OFF
-  gpioPinWrite(_SPI_CH, _DEF_LOW);
+  gpioPinWrite(_SPI_CH, _DEF_RESET);
 
 // 딜레이
   delay(100);
@@ -79,7 +79,7 @@ uint8_t* max31865_readRegisterN(uint8_t addr, uint8_t n)
 	uint8_t *ret_buf ={0};
 	uint8_t i=0;
 
-	gpioPinWrite(_GPIO_MAX31865_CS, _DEF_HIGH);
+	gpioPinWrite(_GPIO_MAX31865_CS, _DEF_SET);
 	spiTx(_SPI_CH, &addr, 1);
 
 	while (n--)
@@ -87,7 +87,7 @@ uint8_t* max31865_readRegisterN(uint8_t addr, uint8_t n)
 		ret_buf[i] = spiTransfer8(_SPI_CH, dummy);
 		i++;
 	}
-	gpioPinWrite(_GPIO_MAX31865_CS, _DEF_HIGH);
+	gpioPinWrite(_GPIO_MAX31865_CS, _DEF_SET);
 
 	return ret_buf;
 }
@@ -114,11 +114,11 @@ uint16_t max31865_readRegister16(uint8_t addr)
 
 void max31865_writeRegister8(uint8_t addr, uint8_t data)
 {
-	gpioPinWrite(_SPI_CH, _DEF_HIGH);
+	gpioPinWrite(_SPI_CH, _DEF_SET);
 	addr |= 0x80; //[A7]=1 (1000 0000) : write
 	spiTx(_SPI_CH, &addr, 1);
 	spiTx(_SPI_CH, &data, 1);
-	gpioPinWrite(_SPI_CH, _DEF_LOW);
+	gpioPinWrite(_SPI_CH, _DEF_RESET);
 }
 
 uint8_t max31865_readFault()

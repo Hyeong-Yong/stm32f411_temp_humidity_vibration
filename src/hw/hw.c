@@ -25,4 +25,5 @@ void hwInit(void)
 
   spiInit();
 //  max31865_init();
+  dac8562_init();
 }

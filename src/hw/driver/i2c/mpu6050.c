@@ -211,11 +211,11 @@ void cliMPU6050(cli_args_t *args){
 
 	  if (ret == false)
 	  {
-	    cliPrintf( "mcp4725 open \n");
-	    cliPrintf( "mcp4725 scan \n");
-	    cliPrintf( "mcp4725 config \n");
-	    cliPrintf( "mcp4725 get_accel \n");
-	    cliPrintf( "mcp4725 get_angular \n");
+	    cliPrintf( "mpu6050 open \n");
+	    cliPrintf( "mpu6050 scan \n");
+	    cliPrintf( "mpu6050 config \n");
+	    cliPrintf( "mpu6050 get_accel \n");
+	    cliPrintf( "mpu6050 get_angular \n");
 
 	  }
 
