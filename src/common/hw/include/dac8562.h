@@ -15,6 +15,7 @@
 //WRITE DATA, CMD(DB23-DB16)+DATA(DB15-DB0)
 #define CMD_SETA_UPDATEA          0x18    // Write to DAC-A input register and update DAC-A
 #define CMD_SETB_UPDATEB          0x19    // Write to DAC-B input register and update DAC-B
+#define CMD_SETA_UPDATEAB         0x20    // Write to both DAC-A and -B input register and update DAC-A and -B
 #define CMD_UPDATE_ALL_DACS       0x0F    // Update all DACs
 //      DATA                      DB16-DB0   16bit DAC data
 
@@ -36,6 +37,8 @@
 //LDAC, CMD(DB23-DB16)+DATA(DB15-DB0)
 #define CMD_LDAC_DIS              0x30  // CMD: LDAC 핀 ​​기능 명령
 #define DATA_LDAC_DIS             0x0003  // DATA: Bar_LDAC pin inactive for DAC-B and DAC-A
+#define DATA_LDAC_EN              0x0000
+
 
 //Disable internal reference voltage(2.5 V), CMD(DB23-DB16)+DATA(DB15-DB0)
 #define CMD_INTERNAL_REF_DIS      0x38  // CMD：Disable internal reference and reset DACs to gain = 1

@@ -17,13 +17,12 @@ void hwInit(void)
   uartInit();
   buttonInit();
   gpioInit();
-
-  i2cInit();
-  mpu6050_init();
-
-  bme280_init();
-
   spiInit();
-//  max31865_init();
-  dac8562_init();
+
+  //i2cInit();
+  //mpu6050_init();
+
+  //bme280_init();
+
+  //  max31865_init();
 }

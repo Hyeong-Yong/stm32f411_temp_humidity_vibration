@@ -28,7 +28,7 @@ spi_t spi_tbl[SPI_MAX_CH];
 SPI_HandleTypeDef hspi1; // MAX31865
 //DMA_HandleTypeDef hdma_spi1_rx; //MAX31865
 
-SPI_HandleTypeDef hspi5; // MAX31865
+SPI_HandleTypeDef hspi5; // DAC8562
 
 
 bool spiInit(void)
@@ -86,7 +86,7 @@ bool spiOpen(uint8_t ch)
     	  hspi5.Init.CLKPolarity = SPI_POLARITY_LOW;
     	  hspi5.Init.CLKPhase = SPI_PHASE_2EDGE;
     	  hspi5.Init.NSS = SPI_NSS_SOFT;
-    	  hspi5.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+    	  hspi5.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_4;
     	  hspi5.Init.FirstBit = SPI_FIRSTBIT_MSB;
     	  hspi5.Init.TIMode = SPI_TIMODE_DISABLE;
     	  hspi5.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -108,10 +108,7 @@ void spiSetDataMode(uint8_t ch, uint8_t dataMode)
 {
   spi_t  *p_spi = &spi_tbl[ch];
 
-
   if (p_spi->is_open == false) return;
-
-
   switch( dataMode )
   {
     // CPOL=0, CPHA=0

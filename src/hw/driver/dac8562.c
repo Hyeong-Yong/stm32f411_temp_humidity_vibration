@@ -10,6 +10,7 @@
 #include "dac8562.h"
 #include "gpio.h"
 #include "cli.h"
+#include <math.h>
 
 static const uint8_t spi_ch = _DEF_SPI2;
 static float vref;
@@ -31,24 +32,21 @@ static void cliDAC8562(cli_args_t *args);
 void dac8562_init(){
 	  vref = 5;
 	  dac8562_initialize();
-	  gpioPinWrite(_PIN_GPIO_DAC8562_SYNC, _DEF_RESET);
 	  /* !Chip select (low to enable) */
 	  //pinMode(_cs_pin, OUTPUT);
 	  //digitalWrite(_cs_pin,  1);
 
-
 #ifdef _USE_HW_CLI
 	  cliAdd("dac8562", cliDAC8562);
 #endif
-
 }
 
 void dac8562_writeReg(uint8_t cmd_byte, uint16_t data_byte) {
   gpioPinWrite(_PIN_GPIO_DAC8562_SYNC, _DEF_SET);
   spiTransfer8(spi_ch, cmd_byte);
   spiTransfer16(spi_ch, data_byte);
-  //SPI.transfer(cmd_byte);
-  //SPI.transfer16(data_byte);
+//  spiTransfer8(spi_ch, data_byte);
+
   gpioPinWrite(_PIN_GPIO_DAC8562_SYNC, _DEF_RESET);
 };
 
@@ -57,9 +55,6 @@ void dac8562_writeValue(uint8_t cmd_byte, uint8_t mid, uint8_t last) {
 	spiTransfer8(spi_ch, cmd_byte);
 	spiTransfer8(spi_ch, last);
 	spiTransfer8(spi_ch, mid);
-//  SPI.transfer(cmd_byte);
-//  SPI.transfer(last);
-//  SPI.transfer(mid);
 	gpioPinWrite(_PIN_GPIO_DAC8562_SYNC, _DEF_RESET);
 };
 
@@ -105,19 +100,17 @@ void dac8562_initialize() {
 
 uint16_t dac8562_voltageConvert(float voltage)
 {
-	if (voltage > 12 && voltage <-12){
+	if (voltage > 10 && voltage <-10){
 		return 0;
 	}
 
-
-
-	float gain = 4.16667; // OPA2277 Circuit : 100 [k-ohm] / 24 [k-ohm] = 4.16667
+	float ResistorRatio = 4.166667; // OPA2277 Circuit : 100 [k-ohm] / 24 [k-ohm] = 4.16667
 	float Vref = 2.5; // internal reference voltage : 2.5 [V]
 
-	//Voltage = G * Vref * (2 * Din/65536 -1 )
-	uint16_t Din=32768*voltage/gain/Vref+32768;
+	//Voltage = Resistor * Vref * (2 * Din/65536 -1 )
+	uint16_t DAC_in=round(32768*voltage/(ResistorRatio*Vref)+32768);
 
-	return Din;
+	return DAC_in;
 };
 
 #ifdef _USE_HW_CLI
@@ -135,7 +128,7 @@ void cliDAC8562(cli_args_t *args){
 	  else if (args->argc == 3){
 	    if(args->isStr(0, "set_value") == true){
 	        char channel = *(char *)args->getStr(1);
-	        uint16_t voltage = (uint32_t)args->getData(2);
+	        float voltage = (float)args->getData(2);
 	        if (channel == 0x41){ //"A"
 		    	dac8562_writeVoltage_A(voltage);
 	        }
@@ -148,6 +141,18 @@ void cliDAC8562(cli_args_t *args){
 	        else {
 	        	ret= false;
 	        }
+	    }
+	    else if (args->isStr(0, "set_value2") == true){
+	        float voltage = (float)args->getData(2);
+	    	uint16_t input = dac8562_voltageConvert(voltage);
+	    	uint8_t inputMid = (input>>8)&0xFF;
+	    	uint8_t inputLast = input&0xFF;
+
+	    	gpioPinWrite(_PIN_GPIO_DAC8562_SYNC, _DEF_SET);
+	    	spiTransfer8(spi_ch, CMD_SETA_UPDATEA);
+	    	spiTransfer8(spi_ch, inputMid);
+	    	spiTransfer8(spi_ch, inputLast);
+	    	gpioPinWrite(_PIN_GPIO_DAC8562_SYNC, _DEF_RESET);
 	    }
 	    else{
 	      ret = false;
