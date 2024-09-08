@@ -13,6 +13,9 @@
 #include "bsp.h"
 
 
+#define _USE_HW_GALVANO
+#define      HW_GALVANO_PKT_BUF_MAX   10
+
 
 
 #define _USE_HW_USB
